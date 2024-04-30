@@ -55,8 +55,8 @@ class CKACalculator:
 
         self.model1.eval()
         self.model2.eval()
-        self.hook_manager1 = HookManager(self.model1, hook_fn, hook_layer_types, calculate_gram=True)
-        self.hook_manager2 = HookManager(self.model2, hook_fn, hook_layer_types, calculate_gram=True)
+        self.hook_manager1 = HookManager(self.args, self.model1, hook_fn, hook_layer_types, calculate_gram=True)
+        self.hook_manager2 = HookManager(self.args, self.model2, hook_fn, hook_layer_types, calculate_gram=True)
         self.module_names_X = None
         self.module_names_Y = None
         self.num_layers_X = None
@@ -88,7 +88,7 @@ class CKACalculator:
                 dec_inp = torch.cat([batch_y[:, :self.args.label_len, :], dec_inp], dim=1).float().to(self.device)
 
                 self.model1(batch_x, batch_x_mark, dec_inp, batch_y_mark)
-                self.model2(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+                # self.model2(batch_x, batch_x_mark, dec_inp, batch_y_mark)
                 all_layer_X, all_layer_Y = self.extract_layer_list_from_hook_manager()
 
                 # Initialize values on first loop
@@ -229,8 +229,6 @@ class CKACalculator:
         vmax = max(vmax, torch.max(cka_matrix).item()) if vmax is not None else vmax
         ax = sn.heatmap(cka_matrix.cpu(), vmin=vmin, vmax=vmax, annot=show_annotations, cmap=cmap)
         ax.invert_yaxis()
-        # import pdb
-        # pdb.set_trace()
 
         # ax.set_xlabel(f"{self.module_names_Y} layers", fontsize=12)
         # ax.set_ylabel(f"{self.module_names_X} layers", fontsize=12)

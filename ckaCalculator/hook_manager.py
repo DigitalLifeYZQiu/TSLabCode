@@ -16,13 +16,14 @@ from torchvision.models.resnet import Bottleneck, BasicBlock
 from layers.Transformer_EncDec import Encoder, EncoderLayer
 from layers.SelfAttention_Family import FullAttention, AttentionLayer
 from layers.Embed import PatchEmbedding
-from models.PatchTST import FlattenHead
+from models.PatchTST import FlattenHead, Model
 
-_HOOK_LAYER_TYPES = (Encoder, PatchEmbedding)
+# _HOOK_LAYER_TYPES = (PatchEmbedding,FullAttention,nn.Conv1d,nn.Linear)
+_HOOK_LAYER_TYPES = (PatchEmbedding,Encoder,FlattenHead)
 
 
 class HookManager:
-    def __init__(self, model: nn.Module, hook_fn: Optional[Union[str, Callable]] = None,
+    def __init__(self, args, model: nn.Module, hook_fn: Optional[Union[str, Callable]] = None,
                  hook_layer_types: Tuple[Type[nn.Module], ...] = _HOOK_LAYER_TYPES,
                  calculate_gram: bool = True) -> None:
         """
@@ -33,6 +34,7 @@ class HookManager:
         :param hook_layer_types: layer types to register hooks. Should be nn.Module
         """
         self.model = model
+        self.args = args
         self.hook_fn = hook_fn
         self.hook_layer_types = hook_layer_types
         self.calculate_gram = calculate_gram
@@ -103,7 +105,9 @@ class HookManager:
         if type(out) == tuple:
             out = out[0]
 
-        batch_size = out.size(0)
+        # batch_size = out.size(0)
+        batch_size = self.args.batch_size
+
         feature = out.reshape(batch_size, -1)
         if self.calculate_gram:
             feature = gram(feature)
@@ -112,6 +116,10 @@ class HookManager:
         self.module_names.append(module_name)
 
     def avgpool_hook_fn(self, module: nn.Module, inp: torch.Tensor, out: torch.Tensor) -> None:
+        # todo Bugfix: output `out` has different dimension in different model, need reconsideration
+        if type(out) == tuple:
+            out = out[0]
+
         if out.dim() == 4:
             feature = out.mean(dim=(-1, -2))
         elif out.dim() == 3:

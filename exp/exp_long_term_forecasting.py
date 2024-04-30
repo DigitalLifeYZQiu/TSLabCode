@@ -214,7 +214,8 @@ class Exp_Long_Term_Forecast(Exp_Basic):
             print(f"层名称: {name}, 层类: {class_name}")
 
         # calculator = CKACalculator(args = self.args,device=self.device,model1=self.model,model2=self.model,dataloader=test_loader,hook_layer_types=layer_classes)
-        calculator = CKACalculator(args = self.args,device=self.device,model1=self.model,model2=self.model,dataloader=test_loader,)
+        calculator = CKACalculator(args = self.args,device=self.device,model1=self.model,model2=self.model,dataloader=test_loader)
+        print(len(test_loader))
         cka_output = calculator.calculate_cka_matrix()
         print(f"CKA output size: {cka_output.size()}")
         for i, name in enumerate(calculator.module_names_X):
@@ -226,9 +227,9 @@ class Exp_Long_Term_Forecast(Exp_Basic):
             cka_matrix=cka_output,
             title="Model compared with itself",
             show_ticks_labels=True,
-            short_tick_labels_splits=2,
             use_tight_layout=True,
             save_path="./ckaCalculator",
+            show_annotations=False,
             show_img=False,
         )
 
@@ -241,6 +242,7 @@ class Exp_Long_Term_Forecast(Exp_Basic):
         self.model.eval()
         with torch.no_grad():
             for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(test_loader):
+                print("test data executed")
                 batch_x = batch_x.float().to(self.device)
                 batch_y = batch_y.float().to(self.device)
 
