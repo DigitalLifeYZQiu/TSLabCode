@@ -88,7 +88,7 @@ class CKACalculator:
                 dec_inp = torch.cat([batch_y[:, :self.args.label_len, :], dec_inp], dim=1).float().to(self.device)
 
                 self.model1(batch_x, batch_x_mark, dec_inp, batch_y_mark)
-                # self.model2(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+                self.model2(batch_x, batch_x_mark, dec_inp, batch_y_mark)
                 all_layer_X, all_layer_Y = self.extract_layer_list_from_hook_manager()
 
                 # Initialize values on first loop
@@ -238,7 +238,10 @@ class CKACalculator:
         # Deal with tick labels
         if show_ticks_labels:
             if short_tick_labels_splits is None:
+                # import pdb
+                # pdb.set_trace()
                 ax.set_xticklabels(self.module_names_Y)
+                ax.set_yticks(range(len(self.module_names_X)))
                 ax.set_yticklabels(self.module_names_X)
             else:
                 ax.set_xticklabels(
@@ -247,6 +250,7 @@ class CKACalculator:
                         for module in self.module_names_Y
                     ]
                 )
+                ax.set_yticks(range(len(self.module_names_X)))
                 ax.set_yticklabels(
                     [
                         "-".join(module.split(".")[-short_tick_labels_splits:])

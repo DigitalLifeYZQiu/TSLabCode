@@ -111,6 +111,8 @@ if __name__ == '__main__':
     # metrics (dtw)
     parser.add_argument('--use_dtw', type=bool, default=False, 
                         help='the controller of using dtw metric (dtw is time consuming, not suggested unless necessary)')
+    # cka analysis
+    parser.add_argument('--use_cka',default=False, action="store_true", help="Centered Kernel Analysis for all network layers")
     
     # Augmentation
     parser.add_argument('--augmentation_ratio', type=int, default=0, help="How many times to augment")

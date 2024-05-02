@@ -182,56 +182,29 @@ class Exp_Long_Term_Forecast(Exp_Basic):
             print('loading model')
             self.model.load_state_dict(torch.load(os.path.join('./checkpoints/' + setting, 'checkpoint.pth')))
 
-        # from cka import CKA
-        # layers_to_observe = [name for name,_ in self.model.named_modules()]
-        # cka = CKA(
-        #     first_model=self.model,
-        #     second_model=self.model,
-        #     layers=layers_to_observe,
-        #     device="cuda:0",
-        # )
-        # cka_matrix = cka(test_loader,False)
-        # cka.plot_cka(
-        #     cka_matrix=cka_matrix,
-        #     title="Model compared to itself",
-        #     show_ticks_labels=True,
-        #     short_tick_labels_splits=2,
-        #     use_tight_layout=True,
-        #     save_path="./cka",
-        #     show_img=False,
-        # )
-
-        from ckaCalculator.cka import CKACalculator
-        # import pdb
-        # pdb.set_trace()
-        # layer_classes = tuple([layer.__class__ for name, layer in self.model.named_children()])
-        # layer_classes = tuple([layer.__class__ for name, layer in self.model.named_modules()])
-        # layer_classes = tuple([layer.__class__ for name, layer in self.model.named_parameters()])
-        layer_classes = [(name, layer.__class__.__name__) for name, layer in self.model.named_children()]
-
-        # 打印层名称及其对应层的类
-        for name, class_name in layer_classes:
-            print(f"层名称: {name}, 层类: {class_name}")
-
-        # calculator = CKACalculator(args = self.args,device=self.device,model1=self.model,model2=self.model,dataloader=test_loader,hook_layer_types=layer_classes)
-        calculator = CKACalculator(args = self.args,device=self.device,model1=self.model,model2=self.model,dataloader=test_loader)
-        print(len(test_loader))
-        cka_output = calculator.calculate_cka_matrix()
-        print(f"CKA output size: {cka_output.size()}")
-        for i, name in enumerate(calculator.module_names_X):
-            print(f"Layer {i}: \t{name}")
-
-        # import pdb
-        # pdb.set_trace()
-        calculator.plot_cka(
-            cka_matrix=cka_output,
-            title="Model compared with itself",
-            show_ticks_labels=True,
-            use_tight_layout=True,
-            save_path="./ckaCalculator",
-            show_annotations=False,
-            show_img=False,
-        )
+        if self.args.use_cka:
+            from ckaCalculator.cka import CKACalculator
+            from copy import deepcopy
+        
+            layer_classes = tuple([layer.__class__ for name, layer in self.model.named_children()])
+            # layer_classes = tuple([layer.__class__ for name, layer in self.model.named_modules()])
+            model1 = deepcopy(self.model)
+            model2 = deepcopy(self.model)
+            calculator = CKACalculator(args = self.args,device=self.device,model1=model1,model2=model2,dataloader=test_loader,hook_layer_types=layer_classes)
+            cka_output = calculator.calculate_cka_matrix()
+            print(f"CKA output size: {cka_output.size()}")
+            for i, name in enumerate(calculator.module_names_X):
+                print(f"Layer {i}: \t{name}")
+            calculator.plot_cka(
+                cka_matrix=cka_output,
+                title="Model compared with itself",
+                show_ticks_labels=False,
+                short_tick_labels_splits=2,
+                use_tight_layout=True,
+                save_path="./ckaCalculator",
+                show_annotations=False,
+                show_img=False,
+            )
 
         preds = []
         trues = []
@@ -242,7 +215,6 @@ class Exp_Long_Term_Forecast(Exp_Basic):
         self.model.eval()
         with torch.no_grad():
             for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(test_loader):
-                print("test data executed")
                 batch_x = batch_x.float().to(self.device)
                 batch_y = batch_y.float().to(self.device)
 

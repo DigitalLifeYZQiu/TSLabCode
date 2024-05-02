@@ -22,7 +22,8 @@ python -u run.py \
   --c_out 7 \
   --des 'Exp' \
   --n_heads 2 \
-  --itr 1
+  --itr 1 \
+  --use_cka
 
 # python -u run.py \
 #   --task_name long_term_forecast \
