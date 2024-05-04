@@ -23,7 +23,7 @@ _HOOK_LAYER_TYPES = (PatchEmbedding,Encoder,FlattenHead)
 
 
 class HookManager:
-    def __init__(self, args, model: nn.Module, hook_fn: Optional[Union[str, Callable]] = None,
+    def __init__(self, batch_size, model: nn.Module, hook_fn: Optional[Union[str, Callable]] = None,
                  hook_layer_types: Tuple[Type[nn.Module], ...] = _HOOK_LAYER_TYPES,
                  calculate_gram: bool = True) -> None:
         """
@@ -34,7 +34,7 @@ class HookManager:
         :param hook_layer_types: layer types to register hooks. Should be nn.Module
         """
         self.model = model
-        self.args = args
+        self.batch_size = batch_size
         self.hook_fn = hook_fn
         self.hook_layer_types = hook_layer_types
         self.calculate_gram = calculate_gram
@@ -106,7 +106,7 @@ class HookManager:
             out = out[0]
 
         # batch_size = out.size(0)
-        batch_size = self.args.batch_size
+        batch_size = self.batch_size
 
         feature = out.reshape(batch_size, -1)
         if self.calculate_gram:

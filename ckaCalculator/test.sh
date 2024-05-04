@@ -1,4 +1,4 @@
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=6
 
 model_name=PatchTST
 
@@ -23,6 +23,8 @@ python -u run.py \
   --des 'Exp' \
   --n_heads 2 \
   --itr 1 \
+  --patience 10 \
+  --train_epochs 50 \
   --use_cka
 
 # python -u run.py \

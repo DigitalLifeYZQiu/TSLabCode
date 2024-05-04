@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 
 class CKACalculator:
-    def __init__(self, args, device, model1: nn.Module, model2: nn.Module, dataloader: DataLoader,
+    def __init__(self, pred_len, label_len, batch_size, device, model1: nn.Module, model2: nn.Module, dataloader: DataLoader,
                  hook_fn: Optional[Union[str, Callable]] = None,
                  hook_layer_types: Tuple[Type[nn.Module], ...] = _HOOK_LAYER_TYPES, num_epochs: int = 10,
                  group_size: int = 512, epsilon: float = 1e-4, is_main_process: bool = True) -> None:
@@ -43,7 +43,9 @@ class CKACalculator:
         :param epsilon: Small multiplicative value for HSIC. Default: 1e-4
         :param is_main_process: is current instance main process. Default: True
         """
-        self.args = args
+        self.pred_len = pred_len
+        self.label_len = label_len
+        self.batch_size = batch_size
         self.device = device
         self.model1 = model1
         self.model2 = model2
@@ -55,8 +57,8 @@ class CKACalculator:
 
         self.model1.eval()
         self.model2.eval()
-        self.hook_manager1 = HookManager(self.args, self.model1, hook_fn, hook_layer_types, calculate_gram=True)
-        self.hook_manager2 = HookManager(self.args, self.model2, hook_fn, hook_layer_types, calculate_gram=True)
+        self.hook_manager1 = HookManager(self.batch_size, self.model1, hook_fn, hook_layer_types, calculate_gram=True)
+        self.hook_manager2 = HookManager(self.batch_size, self.model2, hook_fn, hook_layer_types, calculate_gram=True)
         self.module_names_X = None
         self.module_names_Y = None
         self.num_layers_X = None
@@ -84,8 +86,8 @@ class CKACalculator:
                 batch_y_mark = batch_y_mark.float().to(self.device)
 
                 # decoder input
-                dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
-                dec_inp = torch.cat([batch_y[:, :self.args.label_len, :], dec_inp], dim=1).float().to(self.device)
+                dec_inp = torch.zeros_like(batch_y[:, -self.pred_len:, :]).float()
+                dec_inp = torch.cat([batch_y[:, :self.label_len, :], dec_inp], dim=1).float().to(self.device)
 
                 self.model1(batch_x, batch_x_mark, dec_inp, batch_y_mark)
                 self.model2(batch_x, batch_x_mark, dec_inp, batch_y_mark)
@@ -232,18 +234,20 @@ class CKACalculator:
 
         # ax.set_xlabel(f"{self.module_names_Y} layers", fontsize=12)
         # ax.set_ylabel(f"{self.module_names_X} layers", fontsize=12)
-        ax.set_xlabel("Model 2 layers", fontsize=12)
-        ax.set_ylabel("Model 1 layers", fontsize=12)
+        ax.set_xlabel("Model 2 layers")
+        ax.set_ylabel("Model 1 layers")
 
         # Deal with tick labels
         if show_ticks_labels:
             if short_tick_labels_splits is None:
                 # import pdb
                 # pdb.set_trace()
+                ax.set_xticks(range(len(self.module_names_Y)))
                 ax.set_xticklabels(self.module_names_Y)
                 ax.set_yticks(range(len(self.module_names_X)))
                 ax.set_yticklabels(self.module_names_X)
             else:
+                ax.set_xticks(range(len(self.module_names_Y)))
                 ax.set_xticklabels(
                     [
                         "-".join(module.split(".")[-short_tick_labels_splits:])
@@ -283,11 +287,54 @@ class CKACalculator:
         if save_path is not None:
             chart_title = chart_title.replace("/", "-")
             path_rel = f"{save_path}/{chart_title}.png"
-            plt.savefig(path_rel, dpi=400, bbox_inches="tight")
+            plt.savefig(path_rel, bbox_inches="tight")
 
         # Show the image if the user chooses to do so
         if show_img:
             plt.show()
+
+    def plot_cka_plotly(
+        self,
+        cka_matrix: torch.Tensor,
+        save_path: str = None,
+        title: str = None,
+        show_ticks_labels: bool = False,
+        short_tick_labels_splits: int | None = None,
+        use_tight_layout: bool = True,
+        show_annotations: bool = True,
+        show_img: bool = True,
+        **kwargs,
+    ) -> None:
+        import plotly.graph_objects as go
+        cka_matrix = cka_matrix.cpu()
+        fig = go.Figure(data = go.Heatmap(
+            z = cka_matrix,
+            x = self.module_names_Y,
+            y = self.module_names_X,
+            colorscale='Viridis',
+            colorbar=dict(title='CKA value')
+        ))
+        fig.update_layout(
+            title=title,
+            xaxis_nticks=len(self.module_names_Y),
+            yaxis_nticks=len(self.module_names_X),
+            width = 800,
+            height = 800,
+
+        )
+        chart_title = title
+        if save_path is not None:
+            chart_title = chart_title.replace("/", "-")
+            # path_rel = f"{save_path}/{chart_title}.png"
+            # plt.savefig(path_rel, bbox_inches="tight")
+            path_html = f"{save_path}/{chart_title}.html"
+            fig.write_html(path_html)
+            path_pdf = f"{save_path}/{chart_title}.pdf"
+            fig.write_image(path_pdf)
+
+        # Show the image if the user chooses to do so
+        if show_img:
+            fig.show()
 
 
 def gram(x: torch.Tensor) -> torch.Tensor:

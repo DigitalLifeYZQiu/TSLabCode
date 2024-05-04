@@ -11,6 +11,8 @@ import warnings
 import numpy as np
 from utils.dtw_metric import dtw,accelerated_dtw
 from utils.augmentation import run_augmentation,run_augmentation_single
+from ckaCalculator.cka import CKACalculator
+from copy import deepcopy
 
 warnings.filterwarnings('ignore')
 
@@ -104,6 +106,29 @@ class Exp_Long_Term_Forecast(Exp_Basic):
 
             self.model.train()
             epoch_time = time.time()
+            if self.args.use_cka:
+                # layer_classes = tuple([layer.__class__ for name, layer in self.model.named_children()])
+                layer_classes = tuple([layer.__class__ for name, layer in self.model.named_modules()])
+                model1 = deepcopy(self.model)
+                model2 = deepcopy(self.model)
+                calculator = CKACalculator(
+                    pred_len=self.args.pred_len,label_len=self.args.label_len,batch_size=self.args.batch_size,
+                    device=self.device,model1=model1,model2=model2,dataloader=test_loader,hook_layer_types=layer_classes
+                )
+                cka_output = calculator.calculate_cka_matrix()
+                print(f"CKA output size: {cka_output.size()}")
+                for i, name in enumerate(calculator.module_names_X):
+                    print(f"Layer {i}: \t{name}")
+                calculator.plot_cka_plotly(
+                    cka_matrix=cka_output,
+                    title="{}_{}_Ep{}".format(self.args.model,self.args.data,epoch+1),
+                    show_ticks_labels=True,
+                    short_tick_labels_splits=2,
+                    use_tight_layout=False,
+                    save_path="./CKAEXP",
+                    show_annotations=False,
+                    show_img=False,
+                )
             for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(train_loader):
                 iter_count += 1
                 model_optim.zero_grad()
@@ -183,25 +208,25 @@ class Exp_Long_Term_Forecast(Exp_Basic):
             self.model.load_state_dict(torch.load(os.path.join('./checkpoints/' + setting, 'checkpoint.pth')))
 
         if self.args.use_cka:
-            from ckaCalculator.cka import CKACalculator
-            from copy import deepcopy
-        
-            layer_classes = tuple([layer.__class__ for name, layer in self.model.named_children()])
-            # layer_classes = tuple([layer.__class__ for name, layer in self.model.named_modules()])
+            # layer_classes = tuple([layer.__class__ for name, layer in self.model.named_children()])
+            layer_classes = tuple([layer.__class__ for name, layer in self.model.named_modules()])
             model1 = deepcopy(self.model)
             model2 = deepcopy(self.model)
-            calculator = CKACalculator(args = self.args,device=self.device,model1=model1,model2=model2,dataloader=test_loader,hook_layer_types=layer_classes)
+            calculator = CKACalculator(
+                pred_len=self.args.pred_len,label_len=self.args.label_len,batch_size=self.args.batch_size,
+                device=self.device,model1=model1,model2=model2,dataloader=test_loader,hook_layer_types=layer_classes
+            )
             cka_output = calculator.calculate_cka_matrix()
             print(f"CKA output size: {cka_output.size()}")
             for i, name in enumerate(calculator.module_names_X):
                 print(f"Layer {i}: \t{name}")
-            calculator.plot_cka(
+            calculator.plot_cka_plotly(
                 cka_matrix=cka_output,
                 title="Model compared with itself",
-                show_ticks_labels=False,
+                show_ticks_labels=True,
                 short_tick_labels_splits=2,
-                use_tight_layout=True,
-                save_path="./ckaCalculator",
+                use_tight_layout=False,
+                save_path="./CKAEXP",
                 show_annotations=False,
                 show_img=False,
             )
