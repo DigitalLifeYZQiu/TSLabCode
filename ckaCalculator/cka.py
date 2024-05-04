@@ -325,12 +325,12 @@ class CKACalculator:
         chart_title = title
         if save_path is not None:
             chart_title = chart_title.replace("/", "-")
-            # path_rel = f"{save_path}/{chart_title}.png"
-            # plt.savefig(path_rel, bbox_inches="tight")
             path_html = f"{save_path}/{chart_title}.html"
             fig.write_html(path_html)
+            print(f"Plot saved in {path_html}")
             path_pdf = f"{save_path}/{chart_title}.pdf"
             fig.write_image(path_pdf)
+            print(f"Plot saved in {path_pdf}")
 
         # Show the image if the user chooses to do so
         if show_img:
