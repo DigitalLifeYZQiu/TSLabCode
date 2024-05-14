@@ -119,13 +119,15 @@ class Exp_Long_Term_Forecast(Exp_Basic):
                 print(f"CKA output size: {cka_output.size()}")
                 for i, name in enumerate(calculator.module_names_X):
                     print(f"Layer {i}: \t{name}")
+                if not os.path.exists(self.args.cka_path):
+                    os.makedirs(self.args.cka_path)
                 calculator.plot_cka_plotly(
                     cka_matrix=cka_output,
-                    title="{}_{}_Ep{}".format(self.args.model,self.args.data,epoch+1),
+                    title="{}_{}".format(self.args.model_id,epoch),
                     show_ticks_labels=True,
                     short_tick_labels_splits=2,
                     use_tight_layout=False,
-                    save_path="./CKAEXP",
+                    save_path=self.args.cka_path,
                     show_annotations=False,
                     show_img=False,
                 )
@@ -204,7 +206,7 @@ class Exp_Long_Term_Forecast(Exp_Basic):
     def test(self, setting, test=0):
         test_data, test_loader = self._get_data(flag='test')
         if test:
-            print('loading model')
+            print('loading model with settings: {}'.format(setting))
             self.model.load_state_dict(torch.load(os.path.join('./checkpoints/' + setting, 'checkpoint.pth')))
 
         if self.args.use_cka:
@@ -220,13 +222,15 @@ class Exp_Long_Term_Forecast(Exp_Basic):
             print(f"CKA output size: {cka_output.size()}")
             for i, name in enumerate(calculator.module_names_X):
                 print(f"Layer {i}: \t{name}")
+            if not os.path.exists(self.args.cka_path):
+                os.makedirs(self.args.cka_path)
             calculator.plot_cka_plotly(
                 cka_matrix=cka_output,
-                title="Model compared with itself",
+                title=self.args.model_id,
                 show_ticks_labels=True,
                 short_tick_labels_splits=2,
                 use_tight_layout=False,
-                save_path="./CKAEXP",
+                save_path=self.args.cka_path,
                 show_annotations=False,
                 show_img=False,
             )

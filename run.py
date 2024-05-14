@@ -113,6 +113,7 @@ if __name__ == '__main__':
                         help='the controller of using dtw metric (dtw is time consuming, not suggested unless necessary)')
     # cka analysis
     parser.add_argument('--use_cka',default=False, action="store_true", help="Centered Kernel Analysis for all network layers")
+    parser.add_argument('--cka_path', type=str, default="./CKAresults", help="the directory to save cka analysis results")
     
     # Augmentation
     parser.add_argument('--augmentation_ratio', type=int, default=0, help="How many times to augment")

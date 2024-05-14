@@ -2,7 +2,7 @@ export CUDA_VISIBLE_DEVICES=6
 
 model_name=PatchTST
 
-python -u example.py \
+python -u CKAexample.py \
   --task_name long_term_forecast \
   --is_training 0 \
   --root_path ./dataset/ETT-small/ \
